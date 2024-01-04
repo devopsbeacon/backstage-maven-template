@@ -1,0 +1,85 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: backstage-maven-template
+  title: Maven App with Jenkins CI/CD
+  description: Create a Maven based Web App
+  tags:
+    - recommended
+spec:
+  owner: devopsbeacon@gmail.com
+  type: service
+  parameters:
+    - title: Provide Application Specific Details...
+      required:
+        - webapp_name
+        - owner
+      properties:
+        webapp_name:
+          title: Name
+          type: string
+          description: Unique name of the webapp.
+          ui:field: EntityNamePicker
+        description:
+          title: Description
+          type: string
+          description: Explain in detail for what this webapp is useful.
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the Web component
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+    - title: Choose a location
+      required:
+        - repoUrl
+        - gitguardianApiKey
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: template
+      name: Fetch Skeleton + Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        copyWithoutTemplating:
+          - .github/workflows/*
+        values:
+          serviceName: ${{ parameters.webapp_name }}
+          description: ${{ parameters.description }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+          owner: ${{ parameters.owner }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts: ["github.com"]
+        description: This is ${{ parameters.webapp_name }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: main
+        repoVisibility: public
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: "/catalog-info.yaml"
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
