@@ -35,7 +35,6 @@ spec:
     - title: Choose a location
       required:
         - repoUrl
-        - gitguardianApiKey
       properties:
         repoUrl:
           title: Repository Location
